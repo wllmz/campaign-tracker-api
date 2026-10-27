@@ -7,6 +7,7 @@ export const pool = new pg.Pool({
   database: env.POSTGRES_DB,
   host: env.POSTGRES_HOST,
   port: env.POSTGRES_PORT,
+  connectionTimeoutMillis: 5000,
 });
 
 pool.on("error", (err) => {

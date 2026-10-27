@@ -2,9 +2,9 @@ import { z } from "zod";
 
 export const portSchema = z.coerce
   .number()
-  .refine((port) => port > 0 && port < 65536, {
-    message: "must be a valid port number between 1 and 65535",
-  });
+  .int({ message: "must be an integer" })
+  .min(1, { message: "must be a valid port number between 1 and 65535" })
+  .max(65535, { message: "must be a valid port number between 1 and 65535" });
 
 export const envSchema = z.object({
   POSTGRES_USER: z.string().min(1, { message: "POSTGRES_USER is required" }),
@@ -15,6 +15,7 @@ export const envSchema = z.object({
   POSTGRES_HOST: z.string().min(1, { message: "POSTGRES_HOST is required" }),
   POSTGRES_PORT: portSchema.default(5432),
   PORT: portSchema.default(3000),
+  HOST: z.string().min(1, { message: "HOST is required" }).default("0.0.0.0"),
 });
 
 const envResult = envSchema.safeParse(process.env);

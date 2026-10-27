@@ -38,7 +38,7 @@ async function migrate() {
         await client.query("COMMIT");
         console.log(`✔ ${file}`);
       } catch (err) {
-        await client.query("ROLLBACK");
+        await client.query("ROLLBACK").catch(() => {});
         throw err;
       }
     }

@@ -6,6 +6,10 @@ const fastify = Fastify({
   logger: true,
 });
 
+fastify.addHook("onClose", async () => {
+  await pool.end();
+});
+
 fastify.get("/health", async (request, reply) => {
   try {
     await pool.query("SELECT 1");
@@ -16,7 +20,21 @@ fastify.get("/health", async (request, reply) => {
   }
 });
 
-fastify.listen({ port: env.PORT }, (err) => {
+const shutdown = async (signal: NodeJS.Signals) => {
+  fastify.log.info(`${signal} received, shutting down`);
+  try {
+    await fastify.close();
+    process.exit(0);
+  } catch (err) {
+    fastify.log.error(err);
+    process.exit(1);
+  }
+};
+
+process.once("SIGINT", shutdown);
+process.once("SIGTERM", shutdown);
+
+fastify.listen({ port: env.PORT, host: env.HOST }, (err) => {
   if (err) {
     fastify.log.error(err);
     process.exit(1);
