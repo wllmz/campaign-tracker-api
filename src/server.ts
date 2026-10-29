@@ -3,6 +3,7 @@ import { env } from "./config/env.js";
 import { pool } from "./db/pool.js";
 import { errorHandler } from "./error/error-handler.js";
 import { campaignRoutes } from "./features/campaigns/routes.js";
+import { clientRoutes } from "./features/clients/routes.js";
 import {
   validatorCompiler,
   serializerCompiler,
@@ -32,6 +33,7 @@ fastify.get("/health", async (request, reply) => {
 });
 
 fastify.register(campaignRoutes, { prefix: "/campaigns" });
+fastify.register(clientRoutes, { prefix: "/clients" });
 
 const shutdown = async (signal: NodeJS.Signals) => {
   fastify.log.info(`${signal} received, shutting down`);
