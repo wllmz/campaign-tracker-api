@@ -1,10 +1,13 @@
 import Fastify from "fastify";
 import { env } from "./config/env.js";
 import { pool } from "./db/pool.js";
+import { errorHandler } from "./error/error-handler.js";
 
 const fastify = Fastify({
   logger: true,
 });
+
+fastify.setErrorHandler(errorHandler);
 
 fastify.addHook("onClose", async () => {
   await pool.end();
