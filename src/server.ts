@@ -2,11 +2,18 @@ import Fastify from "fastify";
 import { env } from "./config/env.js";
 import { pool } from "./db/pool.js";
 import { errorHandler } from "./error/error-handler.js";
+import {
+  validatorCompiler,
+  serializerCompiler,
+  type ZodTypeProvider,
+} from "fastify-type-provider-zod";
 
 const fastify = Fastify({
   logger: true,
-});
+}).withTypeProvider<ZodTypeProvider>();
 
+fastify.setValidatorCompiler(validatorCompiler);
+fastify.setSerializerCompiler(serializerCompiler);
 fastify.setErrorHandler(errorHandler);
 
 fastify.addHook("onClose", async () => {
