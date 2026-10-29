@@ -7,26 +7,30 @@ import type { Campaign, CreateCampaignInput, UpdateCampaignInput } from "./schem
 
 const RESTRICT_VIOLATION = "23001";
 const FOREIGN_KEY_VIOLATION = "23503";
-const UNIQUE_VIOLATION = "23505";
 
 const COLUMNS = "id, name, client_id, chef_id, created_at, updated_at";
 
-// INSERT / UPDATE : traduit les erreurs Postgres en erreurs métier
+// INSERT / UPDATE : traduit les erreurs Postgres en erreurs métier, contrainte par contrainte.
+// Une contrainte inconnue remonte telle quelle (500) : mieux qu'un message faux.
 function toWriteError(err: unknown): unknown {
-  if (err instanceof pg.DatabaseError) {
-    if (err.code === UNIQUE_VIOLATION) {
-      return new ConflictError("A campaign with this name already exists for this client");
-    }
-    if (err.code === FOREIGN_KEY_VIOLATION) {
-      return new InvalidReferenceError("Client or chef not found");
-    }
+  if (!(err instanceof pg.DatabaseError)) {
+    return err;
   }
-  return err;
+  switch (err.constraint) {
+    case "campaigns_client_name_unique":
+      return new ConflictError("A campaign with this name already exists for this client");
+    case "campaigns_client_id_fkey":
+      return new InvalidReferenceError("Client not found");
+    case "campaigns_chef_id_fkey":
+      return new InvalidReferenceError("Chef not found");
+    default:
+      return err;
+  }
 }
 
 export async function findAllCampaigns(): Promise<Campaign[]> {
   const result = await pool.query<Campaign>(
-    `SELECT ${COLUMNS} FROM campaigns ORDER BY created_at DESC`,
+    `SELECT ${COLUMNS} FROM campaigns ORDER BY id DESC`,
   );
   return result.rows;
 }
@@ -90,8 +94,11 @@ export async function deleteCampaign(id: string): Promise<void> {
   try {
     result = await pool.query("DELETE FROM campaigns WHERE id = $1", [id]);
   } catch (err) {
-    // ON DELETE RESTRICT lève 23001 (pas 23503) : la campagne a encore des livrables
-    if (err instanceof pg.DatabaseError && err.code === RESTRICT_VIOLATION) {
+    // La campagne a encore des livrables : RESTRICT lève 23001, NO ACTION (défaut) lève 23503
+    if (
+      err instanceof pg.DatabaseError &&
+      (err.code === RESTRICT_VIOLATION || err.code === FOREIGN_KEY_VIOLATION)
+    ) {
       throw new ConflictError("Campaign still has deliverables");
     }
     throw err;

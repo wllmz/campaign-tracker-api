@@ -1,10 +1,20 @@
 import { NotFoundError } from "./not-found-error.js";
 import { ConflictError } from "./conflict-error.js";
 import { InvalidReferenceError } from "./invalid-reference-error.js";
-import type { FastifyError, FastifyRequest, FastifyReply } from "fastify";
+import type { FastifyRequest, FastifyReply } from "fastify";
+
+// Erreurs Fastify (validation, JSON invalide…) : elles portent déjà un statusCode 4xx
+function hasClientStatusCode(error: unknown): error is Error & { statusCode: number } {
+  return (
+    error instanceof Error &&
+    "statusCode" in error &&
+    typeof error.statusCode === "number" &&
+    error.statusCode < 500
+  );
+}
 
 export function errorHandler(
-  error: FastifyError,
+  error: unknown,
   request: FastifyRequest,
   reply: FastifyReply,
 ): void {
@@ -14,7 +24,7 @@ export function errorHandler(
     reply.status(409).send({ error: error.message });
   } else if (error instanceof InvalidReferenceError) {
     reply.status(400).send({ error: error.message });
-  } else if (error.statusCode !== undefined && error.statusCode < 500) {
+  } else if (hasClientStatusCode(error)) {
     reply.status(error.statusCode).send({ error: error.message });
   } else {
     request.log.error(error);
