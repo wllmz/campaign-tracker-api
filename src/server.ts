@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import { env } from "./config/env.js";
 import { pool } from "./db/pool.js";
 import { errorHandler } from "./error/error-handler.js";
+import { campaignRoutes } from "./features/campaigns/routes.js";
 import {
   validatorCompiler,
   serializerCompiler,
@@ -29,6 +30,8 @@ fastify.get("/health", async (request, reply) => {
     return reply.status(503).send({ status: "error", db: "error" });
   }
 });
+
+fastify.register(campaignRoutes, { prefix: "/campaigns" });
 
 const shutdown = async (signal: NodeJS.Signals) => {
   fastify.log.info(`${signal} received, shutting down`);
