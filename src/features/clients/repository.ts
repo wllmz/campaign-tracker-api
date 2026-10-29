@@ -20,16 +20,14 @@ function toWriteError(err: unknown): unknown {
 }
 
 // Ordre alphabétique : la liste sert à remplir un menu déroulant
-export const findAllClients = async (): Promise<Client[]> => {
+export async function findAllClients(): Promise<Client[]> {
   const result = await pool.query<Client>(
     `SELECT ${COLUMNS} FROM clients ORDER BY name`,
   );
   return result.rows;
-};
+}
 
-export const createClient = async (
-  input: CreateClientInput,
-): Promise<Client> => {
+export async function createClient(input: CreateClientInput): Promise<Client> {
   try {
     const result = await pool.query<Client>(
       `INSERT INTO clients (name)
@@ -45,4 +43,4 @@ export const createClient = async (
   } catch (err) {
     throw toWriteError(err);
   }
-};
+}
